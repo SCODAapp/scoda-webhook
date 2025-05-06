@@ -12,7 +12,7 @@ const db = getFirestore();
 const app = express();
 app.use(express.json());
 
-app.post("/webhook-mercadopago", async (req, res) => {
+app.post("/webhook", async (req, res) => {
   const { type, data } = req.body;
 
   if (type === "payment") {
