@@ -1,16 +1,15 @@
-const express = require("express");
-const { initializeApp, cert } = require("firebase-admin/app");
+const { initializeApp } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 
-// Cargar las credenciales desde la variable de entorno
-const serviceAccount = require(process.env.FIREBASE_ADMIN_KEY);
-
-
-initializeApp({ credential: cert(serviceAccount) });
+// Firebase usa automáticamente la variable de entorno GOOGLE_APPLICATION_CREDENTIALS
+initializeApp();
 const db = getFirestore();
 
 const app = express();
 app.use(express.json());
+
+// Resto del código...
+
 
 // Resto del código...
 
