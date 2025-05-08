@@ -3,7 +3,8 @@ const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 
 // Cargar las credenciales desde la variable de entorno
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
+const serviceAccount = require(process.env.FIREBASE_ADMIN_KEY);
+
 
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
