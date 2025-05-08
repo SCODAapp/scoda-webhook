@@ -1,13 +1,18 @@
 const express = require("express");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
-const serviceAccount = require("./firebase-admin-key.json");
+
+// Cargar las credenciales desde la variable de entorno
+const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_KEY);
 
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const app = express();
 app.use(express.json());
+
+// Resto del código...
+
 
 // Guardar email antes del pago
 app.post("/guardar-email", async (req, res) => {
