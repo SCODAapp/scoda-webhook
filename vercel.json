@@ -1,7 +1,11 @@
 {
-    "version": 2,
-    "public": false,
-    "rewrites": [
-      { "source": "/api/(.*)", "destination": "/api/$1" }
-    ]
-  }
+  "version": 2,
+  "builds": [{
+    "src": "api/mercadopago.js",
+    "use": "@vercel/node"
+  }],
+  "routes": [{
+    "src": "/api/mercadopago",
+    "dest": "/api/mercadopago.js"
+  }]
+}
