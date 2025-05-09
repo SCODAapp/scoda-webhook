@@ -9,23 +9,26 @@ const db = getFirestore();
 const app = express();
 app.use(express.json());
 
-// Ruta para guardar el email antes del pago
 app.post("/guardar-email", async (req, res) => {
   try {
+    console.log("📥 Recibido POST a /guardar-email");
+
     const { email } = req.body;
     if (!email) {
-      console.warn("❗ Falta email en el cuerpo");
+      console.log("⚠️ Falta el email");
       return res.status(400).send("Falta el email");
     }
 
     await db.collection("pagos_pendientes").add({ email, pagado: false });
-    console.log("📩 Email guardado:", email);
+
+    console.log("✅ Email guardado:", email);
     res.status(200).send("Email guardado");
   } catch (error) {
     console.error("❌ Error en /guardar-email:", error);
-    res.status(500).send("Error interno del servidor");
+    res.status(500).send("Error interno");
   }
 });
+
 
 // Ruta para recibir el webhook de MercadoPago
 app.post("/webhook-mercadopago", async (req, res) => {
