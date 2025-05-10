@@ -1,13 +1,17 @@
 const express = require("express");
+const crypto = require("crypto");
 const { initializeApp, cert } = require("firebase-admin/app");
 const { getFirestore } = require("firebase-admin/firestore");
 const serviceAccount = require("./firebase-admin-key.json");
 
+// Firebase
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const app = express();
-app.use(express.json());
+
+// Middleware solo para JSON (NO afecta /webhook-mercadopago)
+app.use("/guardar-email", express.json());
 
 app.post("/guardar-email", async (req, res) => {
   try {
@@ -29,21 +33,45 @@ app.post("/guardar-email", async (req, res) => {
   }
 });
 
+// Middleware raw solo para la ruta del webhook
+app.use("/webhook-mercadopago", express.raw({ type: "*/*" }));
 
-// Ruta para recibir el webhook de MercadoPago
 app.post("/webhook-mercadopago", async (req, res) => {
   try {
-    const { type, data } = req.body;
+    const signature = req.headers["x-signature"];
+    const secret = process.env.MP_WEBHOOK_SECRET;
+
+    if (!signature || !secret) {
+      console.error("⚠️ Falta X-Signature o el secreto");
+      return res.status(400).send("Faltan datos de autenticación");
+    }
+
+    const rawBody = req.body;
+    const hmac = crypto.createHmac("sha256", secret);
+    hmac.update(rawBody);
+    const expectedSignature = hmac.digest("hex");
+
+    if (signature !== expectedSignature) {
+      console.error("❌ Firmas no coinciden");
+      console.log("Recibida:", signature);
+      console.log("Generada:", expectedSignature);
+      return res.status(403).send("Firma no válida");
+    }
+
+    const parsed = JSON.parse(rawBody.toString());
+
+    const { type, data } = parsed;
 
     if (type === "payment") {
       const paymentId = data.id;
-      console.log("📥 Webhook recibido para pago ID:", paymentId);
+      console.log("📥 Webhook válido recibido para pago ID:", paymentId);
 
-      // Aquí deberías hacer una consulta real a la API de MP con tu token
+      // Aquí deberías validar contra la API real de MercadoPago
       const pagoAprobado = true;
 
       if (pagoAprobado) {
-        const pendientes = await db.collection("pagos_pendientes")
+        const pendientes = await db
+          .collection("pagos_pendientes")
           .where("pagado", "==", false)
           .limit(1)
           .get();
@@ -55,7 +83,7 @@ app.post("/webhook-mercadopago", async (req, res) => {
           await db.collection("usuarios").add({
             email,
             creado_en: new Date(),
-            rol: "cliente"
+            rol: "cliente",
           });
 
           await doc.ref.update({ pagado: true });
@@ -74,7 +102,7 @@ app.post("/webhook-mercadopago", async (req, res) => {
   }
 });
 
-// Iniciar el servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
